@@ -4,34 +4,37 @@ const authMiddleware = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
 
-        console.log("Auth Header:", authHeader);
-
         if (!authHeader) {
-            return res.status(404).json({ message: "Token Required", data: null });
+            return res.status(401).json({ message: "Token Required", data: null });
         }
 
-        const token = authHeader.split(" ")[1];
+        const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
 
         if (!token) {
-            return res.status(404).json({ message: "Token Missing", data: null });
+            return res.status(401).json({ message: "Token Missing", data: null });
         }
 
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
-
-        console.log('DECODED USER', decoded);
-
-        req.user = decoded;
-
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // { userId, role, roleId }
         next();
 
     } catch (error) {
-        console.log('Error In Auth Middleware.', error);
-
-        return res.status(500).json({ message: 'Error In Auth Middleware.', error: error.message });
+        return res.status(401).json({ message: 'Invalid or Expired Token.', error: error.message });
     }
 };
 
-module.exports = authMiddleware;
+const roleMiddleware = (...allowedRole) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Authentication Required.', data: null });
+        }
+
+        if (!allowedRole.includes(req.user.role)) {
+            return res.status(403).json({ message: 'Access Denied.', data: null });
+        }
+
+        next();
+    };
+};
+
+module.exports = { authMiddleware, roleMiddleware };

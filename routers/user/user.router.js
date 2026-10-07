@@ -1,5 +1,6 @@
 const express = require('express');
-const { registerController, loginController, fetchAllUserController, fetchSingleUserController, editUserController, deleteUserController } = require('../../controllers/user/user.controller');
+const { registerController, loginController, fetchAllUserController, fetchSingleUserController, editUserController, deleteUserController, getMeController } = require('../../controllers/user/user.controller');
+const { authMiddleware, roleMiddleware } = require('../../middleware/auth/auth.middleware');
 
 const router = express.Router();
 
@@ -7,12 +8,14 @@ router.post('/register', registerController);
 
 router.post('/login', loginController);
 
-router.get('/fetch', fetchAllUserController);
+router.get('/me', authMiddleware, getMeController);
 
-router.get('/fetch/:id', fetchSingleUserController);
+router.get('/fetch', authMiddleware, roleMiddleware('admin'), fetchAllUserController);
 
-router.put('/edit/:id', editUserController);
+router.get('/fetch/:id', authMiddleware, roleMiddleware('admin'), fetchSingleUserController);
 
-router.delete('/delete/:id', deleteUserController);
+router.put('/edit/:id', authMiddleware, roleMiddleware('admin'), editUserController);
+
+router.delete('/delete/:id', authMiddleware, roleMiddleware('admin'), deleteUserController);
 
 module.exports = router;

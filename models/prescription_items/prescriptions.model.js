@@ -6,7 +6,22 @@ const prescriptionsSchema = new mongoose.Schema({
         ref: 'Appointment',
         required: true
     },
+    doctorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor',
+        default: null
+    },
     additionalNotes: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    adminRemarks: {
         type: String,
         trim: true,
         default: ''

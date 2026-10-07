@@ -7,10 +7,10 @@ router.post('/register', registerSpecializationController);
 
 router.get('/fetch', fetchAllSpecializationController);
 
-router.get('/fetch:id', fetchSingleSpecializationController);
+router.get('/fetch/:id', fetchSingleSpecializationController);
 
-router.put('/edit:id', editSpecializationController);
+router.put('/edit/:id', editSpecializationController);
 
-router.delete('/delete:id', deleteSpecializationController);
+router.delete('/delete/:id', deleteSpecializationController);
 
 module.exports = router;

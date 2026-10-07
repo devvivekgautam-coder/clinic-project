@@ -1,6 +1,8 @@
 const User = require("../../models/user/user.model");
 const Patient = require('../../models/patient/patient.model');
 const Doctor = require('../../models/doctors/doctors.model');
+const Role = require("../../models/roles/roles.model");
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const registerController = async (req, res) => {
@@ -12,7 +14,7 @@ const registerController = async (req, res) => {
             email,
             password,
             confirmPassword,
-            role,
+            roleId,
 
             // Patient data
             phone,
@@ -30,13 +32,23 @@ const registerController = async (req, res) => {
 
         } = req.body;
 
-
         // Password check
         if (password !== confirmPassword) {
             console.log('Password And Confirm Password Do Not Match.');
 
             return res.status(400).json({ message: 'Password And Confirm Password Do Not Match.', data: null });
         }
+
+        // Check Role
+        const roleData = await Role.findById(roleId);
+
+        if (!roleData) {
+            console.log('Role Not Found.');
+
+            return res.status(404).json({ message: 'Role Not Found.', data: null });
+        }
+
+        console.log("Role Data:", roleData);
 
         // Password hash
         const pass = await bcrypt.hash(password, 10);
@@ -45,12 +57,13 @@ const registerController = async (req, res) => {
         const user = await User.create({
             name,
             email,
-            role,
+            roleId,
             password: pass
         });
 
         // PATIENT
-        if (user.role === 'patient') {
+
+        if (roleData.name === 'patient') {
             const patient = await Patient.create({
                 userId: user._id,
                 phone,
@@ -61,11 +74,12 @@ const registerController = async (req, res) => {
 
             console.log('Patient Registered Successfully.', patient);
 
-            return res.status(201).json({ message: 'Patient Registered Successfully.', data: patient });
+            return res.status(201).json({ message: 'Patient Registered Successfully.', data: { user, patient } });
         }
 
         // DOCTOR
-        if (user.role === 'doctor') {
+
+        if (roleData.name === 'doctor') {
             const doctor = await Doctor.create({
                 userId: user._id,
                 specializationId,
@@ -78,14 +92,15 @@ const registerController = async (req, res) => {
 
             console.log('Doctor Registered Successfully.', doctor);
 
-            return res.status(201).json({ message: 'Doctor Registered Successfully.', data: doctor });
+            return res.status(201).json({ message: 'Doctor Registered Successfully.', data: { user, doctor } });
         }
 
         // Admin
-        if (user.role === 'admin') {
+
+        if (roleData.name === 'admin') {
             console.log('Admin Registered Successfully.', user);
 
-            return res.status(201).json({ message: 'Admin Registered Successfully.', data: user });
+            return res.status(201).json({ message: 'Admin Registered Successfully.', data: { user } });
         }
 
         return res.status(400).json({ message: 'Invalid Role.', data: null });
@@ -93,7 +108,7 @@ const registerController = async (req, res) => {
     } catch (error) {
         console.log('Error While Registering User.', error);
 
-        return res.status(500).json({ message: 'Error While Registering User.', data: null, error: error.message });
+        return res.status(500).json({ message: 'Error While Registering User.', error: error.message });
     }
 };
 
@@ -101,7 +116,7 @@ const loginController = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('roleId');
 
         if (!user) {
             console.log('User Not Found.');
@@ -117,9 +132,16 @@ const loginController = async (req, res) => {
             return res.status(401).json({ message: 'Invalid Email Or Password.', data: null });
         }
 
-        console.log('User Login Successful.', user);
+        const token = jwt.sign({ userId: user._id, role: user.roleId.name, roleId: user.roleId },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '1d'
+            }
+        );
 
-        return res.status(200).json({ message: 'User Login Successful.', data: user });
+        console.log('User Login Successful.', user, token);
+
+        return res.status(200).json({ message: 'User Login Successful.', data: user, token });
 
     } catch (error) {
         console.log('Error While Logging In User.', error);
@@ -177,16 +199,16 @@ const editUserController = async (req, res) => {
         const { id } = req.params;
 
         const { name, email, password, phone } = req.body;
+        const updateData = { name, email };
 
-        const updatedUser = await User.findByIdAndUpdate(id, {
-            name,
-            email,
-            password,
-            phone
-        }, {
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true
-        })
+        }).select('-password');
 
         if (!updatedUser) {
             console.log('User Not Found.');
@@ -223,8 +245,43 @@ const deleteUserController = async (req, res) => {
     } catch (error) {
         console.log('Error While Deleting User.', error);
 
-        return res.status(500).json({ message: 'Error While Deleting User.', error: error.message })
+        return res.status(500).json({ message: 'Error While Deleting User.', error: error.message });
     }
-}
+};
 
-module.exports = { registerController, loginController, fetchAllUserController, fetchSingleUserController, editUserController, deleteUserController };
+const getMeController = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const user = await User.findById(userId).populate('roleId').select('-password');
+
+        if (!user) {
+            console.log('User Not Found.');
+
+            return res.status(404).json({ message: 'User Not Found.', data: null });
+        }
+
+        let patient = null;
+        let doctor = null;
+
+        if (user.roleId?.name === 'patient') {
+            patient = await Patient.findOne({ userId });
+        } else if (user.roleId?.name === 'doctor') {
+            doctor = await Doctor.findOne({ userId }).populate('specializationId');
+        }
+
+        console.log('Current User Profile Fetched Successfully.', user);
+
+        return res.status(200).json({ 
+            message: 'Current User Profile Fetched Successfully.', 
+            data: { user, patient, doctor } 
+        });
+
+    } catch (error) {
+        console.log('Error While Fetching Current User Profile.', error);
+
+        return res.status(500).json({ message: 'Error While Fetching Current User Profile.', error: error.message });
+    }
+};
+
+module.exports = { registerController, loginController, fetchAllUserController, fetchSingleUserController, editUserController, deleteUserController, getMeController };

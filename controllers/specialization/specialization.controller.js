@@ -38,38 +38,32 @@ const fetchAllSpecializationController = async (req, res) => {
     } catch (error) {
         console.log('Error While Fetching All Specialization.', error);
 
-        return res.status(500).json({ message: 'Error While Fetching All Specialization.', error: error.messagee })
+        return res.status(500).json({ message: 'Error While Fetching All Specialization.', error: error.message })
     }
 
 }
 
 const fetchSingleSpecializationController = async (req, res) => {
     try {
-        const { id } = req.body;
-
-        const specialization = await Specialization.find({ id });
+        const { id } = req.params;
+        const specialization = await Specialization.findById(id);
 
         if (!specialization) {
-            console.log('Not Found Please Register.');
-
-            return res.status(404).json({ message: 'Not Found Please Register.', data: null })
+            return res.status(404).json({ message: 'Specialization Not Found.', data: null });
         }
 
-        console.log('Single Specialization Fetched Successfully.', specialization);
-
-        return res.status(200).json({ message: 'Single Specialization Fetched Successfully.', data: specialization })
+        return res.status(200).json({ message: 'Single Specialization Fetched Successfully.', data: specialization });
     } catch (error) {
-        console.log('Error While Fetching Single Specialization.', error);
-
-        return res.status(500).json({ message: 'Error While Fetching Single Specialization.', error: error.message })
+        return res.status(500).json({ message: 'Error While Fetching Single Specialization.', error: error.message });
     }
-}
+};
 
 const editSpecializationController = async (req, res) => {
     try {
-        const { id, name, description } = req.body;
+        const { id } = req.params;
+        const { name, description } = req.body;
 
-        const specialization = await Specialization.findOneAndUpdate(id, {
+        const specialization = await Specialization.findByIdAndUpdate(id, {
             name,
             description
         },
@@ -101,7 +95,7 @@ const deleteSpecializationController = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const specialization = await Specialization.findOneAndDelete(id);
+        const specialization = await Specialization.findByIdAndDelete(id);
 
         if (!specialization) {
             console.log('Specialization Not Found.')
