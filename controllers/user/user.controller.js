@@ -9,37 +9,29 @@ const registerController = async (req, res) => {
     try {
 
         const {
-            // User data
             name,
             email,
             password,
             confirmPassword,
             roleId,
-
-            // Patient data
             phone,
             dateOfBirth,
             gender,
             address,
-
-            // Doctor data
             specializationId,
             qualification,
             experienceYears,
             consultationFee,
             profileImageUrl,
             bio
-
         } = req.body;
 
-        // Password check
         if (password !== confirmPassword) {
             console.log('Password And Confirm Password Do Not Match.');
 
             return res.status(400).json({ message: 'Password And Confirm Password Do Not Match.', data: null });
         }
 
-        // Check Role
         const roleData = await Role.findById(roleId);
 
         if (!roleData) {
@@ -50,10 +42,8 @@ const registerController = async (req, res) => {
 
         console.log("Role Data:", roleData);
 
-        // Password hash
         const pass = await bcrypt.hash(password, 10);
 
-        // Create User
         const user = await User.create({
             name,
             email,
@@ -61,41 +51,48 @@ const registerController = async (req, res) => {
             password: pass
         });
 
-        // PATIENT
-
         if (roleData.name === 'patient') {
-            const patient = await Patient.create({
-                userId: user._id,
-                phone,
-                dateOfBirth,
-                gender,
-                address
-            });
+            if (phone && dateOfBirth && gender && address) {
+                const patient = await Patient.create({
+                    userId: user._id,
+                    phone,
+                    dateOfBirth,
+                    gender,
+                    address,
+                    profileImageUrl: profileImageUrl || null
+                });
 
-            console.log('Patient Registered Successfully.', patient);
+                console.log('Patient Registered Successfully.', patient);
 
-            return res.status(201).json({ message: 'Patient Registered Successfully.', data: { user, patient } });
+                return res.status(201).json({ message: 'Patient Registered Successfully.', data: { user, patient } });
+            }
+
+            console.log('Patient User Registered Successfully.', user);
+
+            return res.status(201).json({ message: 'Patient User Registered Successfully. Please complete patient profile registration.', data: { user } });
         }
-
-        // DOCTOR
 
         if (roleData.name === 'doctor') {
-            const doctor = await Doctor.create({
-                userId: user._id,
-                specializationId,
-                qualification,
-                experienceYears,
-                consultationFee,
-                profileImageUrl,
-                bio
-            });
+            if (specializationId && qualification && experienceYears && consultationFee) {
+                const doctor = await Doctor.create({
+                    userId: user._id,
+                    specializationId,
+                    qualification,
+                    experienceYears,
+                    consultationFee,
+                    profileImageUrl,
+                    bio
+                });
 
-            console.log('Doctor Registered Successfully.', doctor);
+                console.log('Doctor Registered Successfully.', doctor);
 
-            return res.status(201).json({ message: 'Doctor Registered Successfully.', data: { user, doctor } });
+                return res.status(201).json({ message: 'Doctor Registered Successfully.', data: { user, doctor } });
+            }
+
+            console.log('Doctor User Registered Successfully.', user);
+
+            return res.status(201).json({ message: 'Doctor User Registered Successfully. Please complete doctor profile registration.', data: { user } });
         }
-
-        // Admin
 
         if (roleData.name === 'admin') {
             console.log('Admin Registered Successfully.', user);
@@ -199,7 +196,7 @@ const editUserController = async (req, res) => {
         const { id } = req.params;
 
         const { name, email, password, phone } = req.body;
-        const updateData = { name, email };
+        const updateData = { name, email, password, phone };
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10);
@@ -272,9 +269,9 @@ const getMeController = async (req, res) => {
 
         console.log('Current User Profile Fetched Successfully.', user);
 
-        return res.status(200).json({ 
-            message: 'Current User Profile Fetched Successfully.', 
-            data: { user, patient, doctor } 
+        return res.status(200).json({
+            message: 'Current User Profile Fetched Successfully.',
+            data: { user, patient, doctor }
         });
 
     } catch (error) {

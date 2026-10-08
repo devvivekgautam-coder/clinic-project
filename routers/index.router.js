@@ -32,7 +32,7 @@ router.use('/appointment', appointmentRouter);
 // Prescription Router
 router.use('/prescription', prescriptionRouter);
 
-// Prescription Items Router
+// Prescription-Item Router
 router.use('/prescription-items', prescriptionItemsRouter);
 
 // Doctor Availability Router

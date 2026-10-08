@@ -24,6 +24,10 @@ const patientSchema = new mongoose.Schema({
     address: {
         type: String,
         required: true,
+    },
+    profileImageUrl: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

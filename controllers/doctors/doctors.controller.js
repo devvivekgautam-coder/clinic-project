@@ -5,7 +5,12 @@ const bcrypt = require('bcrypt');
 
 const registerDoctorController = async (req, res) => {
     try {
-        const { userId, specializationId, qualification, experienceYears, consultationFee, profileImageUrl, bio } = req.body;
+        const { userId, specializationId, qualification, experienceYears, consultationFee, bio } = req.body;
+        let profileImageUrl = req.body.profileImageUrl || null;
+
+        if (req.file) {
+            profileImageUrl = `/uploads/doctors/${req.file.filename}`;
+        }
 
         const doctor = await Doctor.create({
             userId,
@@ -83,7 +88,9 @@ const loginDoctorController = async (req, res) => {
 
 const fetchAllDoctorController = async (req, res) => {
     try {
-        const doctor = await Doctor.find();
+        const doctor = await Doctor.find()
+            .populate('userId', 'name email')
+            .populate('specializationId');
 
         if (!doctor) {
             console.log('No Data Found.');
@@ -106,7 +113,7 @@ const fetchSingleDoctorController = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const doctor = await Doctor.findById(id);
+        const doctor = await Doctor.findById(id).populate('userId', 'name email').populate('specializationId');
 
         if (!doctor) {
             console.log('No Data Found.');
@@ -116,7 +123,7 @@ const fetchSingleDoctorController = async (req, res) => {
 
         console.log('Single Doctor Fetched Successfully.', doctor);
 
-        return res.status(200).json({ message: 'Single Doctor Fetched Successfully.', data: doctor })
+        return res.status(200).json({ message: 'Single Doctor Fetched Successfully.', data: doctor });
 
     } catch (error) {
         console.log('Error While Fetching Single Doctor.', error);
@@ -129,18 +136,21 @@ const editDoctorController = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const { qualification, experienceYears, consultationFee, profileImageUrl, bio } = req.body;
+        const { qualification, experienceYears, consultationFee, bio } = req.body;
+        let profileImageUrl = req.body.profileImageUrl;
 
-        const doctor = await Doctor.findByIdAndUpdate(id, {
-            qualification,
-            experienceYears,
-            consultationFee,
-            profileImageUrl,
-            bio
-        }, {
-            new: true,
-            runValidators: true
-        });
+        if (req.file) {
+            profileImageUrl = `/uploads/doctors/${req.file.filename}`;
+        }
+
+        const updateData = { qualification, experienceYears, consultationFee, bio };
+        if (profileImageUrl) {
+            updateData.profileImageUrl = profileImageUrl;
+        }
+
+        const doctor = await Doctor.findByIdAndUpdate(id, updateData, { new: true })
+            .populate('userId', 'name email')
+            .populate('specializationId');
 
         if (!doctor) {
             console.log('No Data Found.');

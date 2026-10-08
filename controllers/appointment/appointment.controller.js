@@ -48,7 +48,6 @@ const fetchAllAppointmentController = async (req, res) => {
         const { doctorProfileId, doctorId, patientProfileId, status } = req.query;
         const filter = {};
 
-        // Query Param Filters
         if (doctorProfileId || doctorId) {
             filter.doctorProfileId = doctorProfileId || doctorId;
         }
@@ -59,8 +58,6 @@ const fetchAllAppointmentController = async (req, res) => {
             filter.status = status;
         }
 
-        // Automatic Role Filters:
-        // Agar logged-in user Patient hai, toh use sirf uski apni appointments dikhein
         if (req.user && req.user.role === 'patient') {
             const patient = await Patient.findOne({ userId: req.user.userId });
             if (patient) {
@@ -68,7 +65,6 @@ const fetchAllAppointmentController = async (req, res) => {
             }
         }
 
-        // Agar logged-in user Doctor hai, toh use sirf uske paas aayi appointments dikhein
         if (req.user && req.user.role === 'doctor') {
             const doctor = await Doctor.findOne({ userId: req.user.userId });
             if (doctor) {

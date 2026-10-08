@@ -6,16 +6,19 @@ const jwt = require('jsonwebtoken');
 const registerPatientController = async (req, res) => {
     try {
         const { userId, phone, dateOfBirth, gender, address } = req.body;
+        let profileImageUrl = req.body.profileImageUrl || null;
 
-        // const user = await User.findById(_id);
-        // const {id} = user._id;
+        if (req.file) {
+            profileImageUrl = `/uploads/patients/${req.file.filename}`;
+        }
 
         const patient = await Patient.create({
             userId,
             phone,
             dateOfBirth,
             gender,
-            address
+            address,
+            profileImageUrl
         });
 
         console.log('Patient Register Successfully.', patient);
@@ -73,7 +76,7 @@ const loginPatientController = async (req, res) => {
 
 const fetchAllPatientController = async (req, res) => {
     try {
-        const patient = await Patient.find();
+        const patient = await Patient.find().populate('userId', 'name email');
 
         if (!patient) {
             console.log('Patient Not Found.');
@@ -83,7 +86,7 @@ const fetchAllPatientController = async (req, res) => {
 
         console.log('All Patient Fetched Successfully.', patient);
 
-        return res.status(200).json({ message: 'All Patient Fetched Successfully.', data: patient })
+        return res.status(200).json({ message: 'All Patient Fetched Successfully.', data: patient });
 
     } catch (error) {
         console.log('Error While Fetching All Patients.', error);
@@ -96,7 +99,7 @@ const fetchSinglePatientController = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const patient = await Patient.findById(id);
+        const patient = await Patient.findById(id).populate('userId', 'name email');
 
         if (!patient) {
             console.log('Patient Not Found.');
@@ -119,16 +122,19 @@ const editPatientController = async (req, res) => {
     try {
         const { id } = req.params;
         const { phone, dateOfBirth, gender, address } = req.body;
+        let profileImageUrl = req.body.profileImageUrl;
 
-        const updatedPatient = await Patient.findByIdAndUpdate(id, {
-            phone,
-            dateOfBirth,
-            gender,
-            address
-        }, {
-            new: true,
-            runValidators: true
-        });
+        if (req.file) {
+            profileImageUrl = `/uploads/patients/${req.file.filename}`;
+        }
+
+        const updateData = { phone, dateOfBirth, gender, address };
+        if (profileImageUrl) {
+            updateData.profileImageUrl = profileImageUrl;
+        }
+
+        const updatedPatient = await Patient.findByIdAndUpdate(id, updateData, { new: true })
+            .populate('userId', 'name email');
 
         if (!updatedPatient) {
             console.log('Patient Not Found.');
@@ -143,7 +149,7 @@ const editPatientController = async (req, res) => {
     } catch (error) {
         console.log('Error While Updating Patient.', error);
 
-        return res.status(500).json({ message: 'Error While Updating Patient.', error: error.message })
+        return res.status(500).json({ message: 'Error While Updating Patient.', error: error.message });
     }
 }
 

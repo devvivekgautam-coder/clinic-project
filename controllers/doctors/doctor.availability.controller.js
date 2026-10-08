@@ -5,7 +5,6 @@ const registerDoctorAvailabilityController = async (req, res) => {
     try {
         let { doctorProfileId, dayOfWeek, startTime, endTime, isActive, availabilityKey } = req.body;
 
-        // Agar logged-in user doctor hai aur body me doctorProfileId nahi di, toh automatic attach karein
         if (req.user && req.user.role === 'doctor' && !doctorProfileId) {
             const doctor = await Doctor.findOne({ userId: req.user.userId });
             if (doctor) {
