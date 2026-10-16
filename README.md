@@ -313,7 +313,7 @@ node-project/
 ## 👨‍💻 Author & Acknowledgments
 
 - **Developer**: Vivek Gautam
-- **GitHub**: [@your-github-username](https://github.com/your-username)
-- **LinkedIn**: [Your LinkedIn Profile](https://linkedin.com/in/your-profile)
+- **GitHub**: [devvivekgautam-coder](https://github.com/your-username)
+- **LinkedIn**: [https://www.linkedin.com/in/vivek-gautam-2737a7367/](https://linkedin.com/in/your-profile)
 
 If you found this project helpful, please give it a ⭐️ on GitHub!
